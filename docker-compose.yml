@@ -1,0 +1,16 @@
+services:
+  relationshipos:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    volumes:
+      - relationship_data:/data
+    restart: unless-stopped
+  chroma:
+    image: chromadb/chroma:latest
+    volumes:
+      - chroma_data:/data
+    restart: unless-stopped
+volumes:
+  relationship_data:
+  chroma_data:
