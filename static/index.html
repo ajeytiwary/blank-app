@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>RelationshipOS</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#f8fafc;color:#111827}.app{max-width:720px;margin:auto;padding:20px 16px 90px}.hero,.card{border-radius:20px;padding:18px;margin:12px 0}.hero{background:#111827;color:white}.card{background:white;border:1px solid #e2e8f0}.mic{display:block;margin:18px auto;width:72px;height:72px;border:0;border-radius:50%;font-size:30px}.muted{color:#64748b}input,textarea,select{width:100%;box-sizing:border-box;padding:12px;margin:5px 0;border:1px solid #cbd5e1;border-radius:12px;font:inherit}button{min-height:44px}.primary{background:#111827;color:white;border:0;border-radius:12px;padding:10px 16px}.person{display:flex;justify-content:space-between;gap:10px}.pill{font-size:12px;background:#eef2ff;padding:4px 8px;border-radius:20px}dialog{border:0;border-radius:20px;width:min(500px,90%)}
+</style>
+</head>
+<body><main class="app">
+<p class="muted">Your relationship operating system</p><h1>Today</h1>
+<section class="hero"><strong>Ask or capture anything</strong><p id="voiceText">Who should I contact today?</p><button class="mic" id="mic">🎙️</button><div id="voiceHint">Tap to talk</div></section>
+<button class="primary" id="add">+ Add person</button>
+<h2>Who to contact</h2><div id="people"><div class="card muted">Loading…</div></div>
+<h2>Open loops</h2><div id="reminders"></div>
+</main>
+<dialog id="dlg"><form id="form"><h2>Add person</h2><input name="name" required placeholder="Name"><input name="company" placeholder="Company"><input name="role" placeholder="Role"><select name="context"><option>personal</option><option>business</option><option>MeasureNature</option><option>Saha</option></select><textarea name="notes" placeholder="Context and notes"></textarea><button class="primary">Save</button> <button type="button" id="cancel">Cancel</button></form></dialog>
+<script>
+const q=s=>document.querySelector(s);const safe=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function load(){const t=await fetch('/api/today').then(r=>r.json());q('#people').innerHTML=t.people_to_contact.length?t.people_to_contact.map(p=>'<div class="card person"><div><strong>'+safe(p.name)+'</strong><div class="muted">'+safe(p.company||p.context)+'</div></div><span class="pill">'+safe(p.context)+'</span></div>').join(''):'<div class="card muted">Add your first person.</div>';q('#reminders').innerHTML=t.reminders.length?t.reminders.map(r=>'<div class="card"><strong>'+safe(r.text)+'</strong></div>').join(''):'<div class="card muted">Nothing pending.</div>'}
+q('#add').onclick=()=>q('#dlg').showModal();q('#cancel').onclick=()=>q('#dlg').close();q('#form').onsubmit=async e=>{e.preventDefault();let d=Object.fromEntries(new FormData(e.target));await fetch('/api/people',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});q('#dlg').close();e.target.reset();load()};
+const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(R){const r=new R();r.lang='en-US';q('#mic').onclick=()=>{r.start();q('#voiceHint').textContent='Listening…'};r.onresult=async e=>{let text=e.results[0][0].transcript;q('#voiceText').textContent=text;q('#voiceHint').textContent='Captured';await fetch('/api/voice-note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transcript:text})})}}else{q('#mic').disabled=true;q('#voiceHint').textContent='Voice needs a supported browser'}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');load();
+</script></body></html>
